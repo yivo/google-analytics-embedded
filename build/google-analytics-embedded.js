@@ -6,44 +6,42 @@
 (function() {
   var analyticsJS, el, head, i, initialize, len1, ref, trackingID;
 
-  initialize = (function() {
-    var initialized;
-    initialized = false;
-    return function(trackingID) {
-      var pageview, ref;
-      if (!initialized) {
-        if (!trackingID) {
-          throw new TypeError('[Google Analytics Embedded] Tracking ID is required');
-        }
-        window.GoogleAnalyticsObject = 'ga';
-        window[window.GoogleAnalyticsObject] = function() {
-          var args, idx, len;
-          args = [];
-          len = arguments.length;
-          idx = -1;
-          while (++idx < len) {
-            args.push(arguments[idx]);
-          }
-          (ga.q != null ? ga.q : ga.q = []).push(args);
-        };
-        ga.l = (ref = typeof Date.now === "function" ? Date.now() : void 0) != null ? ref : +new Date();
-        ga('create', trackingID, 'auto');
-        pageview = function() {
-          ga('send', 'pageview', location.href.split('#')[0]);
-        };
-        if (typeof Turbolinks !== "undefined" && Turbolinks !== null ? Turbolinks.supported : void 0) {
-          $(document).on('page:change', pageview);
-        } else {
-          pageview();
-          if ($.support.pjax) {
-            $(document).on('pjax:end', pageview);
-          }
-        }
-        analyticsJS();
-        initialized = true;
+  initialize = function(trackingID) {
+    var $document, pageset, pageview, ref;
+    if (!trackingID) {
+      throw new TypeError('[Google Analytics Embedded] Tracking ID is required');
+    }
+    window.GoogleAnalyticsObject = 'ga';
+    window[window.GoogleAnalyticsObject] = function() {
+      var args, idx, len;
+      args = [];
+      len = arguments.length;
+      idx = -1;
+      while (++idx < len) {
+        args.push(arguments[idx]);
       }
+      return (ga.q != null ? ga.q : ga.q = []).push(args);
     };
-  })();
+    ga.l = (ref = typeof Date.now === "function" ? Date.now() : void 0) != null ? ref : +new Date();
+    ga('create', trackingID, 'auto');
+    pageset = function() {
+      return ga('set', 'page', location.href.split('#')[0]);
+    };
+    pageview = function() {
+      return ga('send', 'pageview');
+    };
+    if (typeof Turbolinks !== "undefined" && Turbolinks !== null ? Turbolinks.supported : void 0) {
+      $document = $(document);
+      $document.one('page:change', function() {
+        return $document.on('page:change', function() {
+          pageset();
+          return pageview();
+        });
+      });
+    }
+    pageview();
+    return analyticsJS();
+  };
 
   analyticsJS = function() {
     try {

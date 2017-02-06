@@ -2,39 +2,36 @@
 # google-analytics-embedded 1.0.5 | https://github.com/yivo/google-analytics-embedded | MIT License
 ###
 
-initialize = do ->
-  initialized = false
+initialize = (trackingID) ->
+  unless trackingID
+    throw new TypeError('[Google Analytics Embedded] Tracking ID is required')
 
-  (trackingID) ->
-    unless initialized
-      unless trackingID
-        throw new TypeError('[Google Analytics Embedded] Tracking ID is required')
+  window.GoogleAnalyticsObject         = 'ga'
+  window[window.GoogleAnalyticsObject] = ->
+    args = []
+    len  = arguments.length
+    idx  = -1
+    args.push(arguments[idx]) while ++idx < len
+    (ga.q ?= []).push(args)
 
-      window.GoogleAnalyticsObject         = 'ga'
-      window[window.GoogleAnalyticsObject] = ->
-        args = []
-        len  = arguments.length
-        idx  = -1
-        args.push(arguments[idx]) while ++idx < len
-        (ga.q ?= []).push(args)
-        return
-  
-      ga.l = Date.now?() ? +new Date()
-  
-      ga('create', trackingID, 'auto')
-  
-      pageview = -> ga('send', 'pageview', location.href.split('#')[0]); return
-  
-      if Turbolinks?.supported
-        $(document).on('page:change', pageview)
-      else
+  ga.l = Date.now?() ? +new Date()
+
+  ga('create', trackingID, 'auto')
+
+  pageset  = -> ga('set', 'page', location.href.split('#')[0])
+  pageview = -> ga('send', 'pageview')
+
+  # https://developers.google.com/analytics/devguides/collection/analyticsjs/single-page-applications
+  if Turbolinks?.supported
+    $document = $(document)
+    $document.one 'page:change', ->
+      $document.on 'page:change', ->
+        pageset()
         pageview()
-        $(document).on('pjax:end', pageview) if $.support.pjax
 
-      analyticsJS()
-      
-      initialized = true
-    return
+  pageview()
+
+  analyticsJS()
 
 analyticsJS = ->
   try ```
